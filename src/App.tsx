@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo } from "react"
 import { Table, Modal, Row, Col, Card, Typography, Space } from "antd"
 import {
   LineChart,
@@ -16,7 +16,6 @@ import {
   TeamOutlined,
   BarChartOutlined,
 } from "@ant-design/icons"
-import { log } from "console"
 
 const { Title, Text } = Typography
 
@@ -50,16 +49,36 @@ const App: React.FC = () => {
   }, [])
 
   const fetchData = async () => {
-    setIsLoading(true) // Start loading
+    setIsLoading(true)
     try {
       const response = await axios.get(URL)
       setData(response.data)
     } catch (error) {
       console.error("Error fetching data:", error)
     } finally {
-      setIsLoading(false) // Stop loading after fetching data
+      setIsLoading(false)
     }
   }
+
+  const processedData = useMemo(() => {
+    return Object.values(
+      data.reduce((acc: any, curr) => {
+        if (!acc[curr.work_year]) {
+          acc[curr.work_year] = {
+            work_year: curr.work_year,
+            jobCount: 0,
+            totalSalary: 0,
+          }
+        }
+        acc[curr.work_year].jobCount++
+        acc[curr.work_year].totalSalary += curr.salary_in_usd
+        return acc
+      }, {})
+    ).map((item: any) => ({
+      ...item,
+      avgSalary: Math.round(item.totalSalary / item.jobCount),
+    }))
+  }, [data])
 
   const columns = [
     {
@@ -82,24 +101,6 @@ const App: React.FC = () => {
       render: (value: number) => `$${value.toLocaleString()}`,
     },
   ]
-
-  const processedData = Object.values(
-    data.reduce((acc: any, curr) => {
-      if (!acc[curr.work_year]) {
-        acc[curr.work_year] = {
-          work_year: curr.work_year,
-          jobCount: 0,
-          totalSalary: 0,
-        }
-      }
-      acc[curr.work_year].jobCount++
-      acc[curr.work_year].totalSalary += curr.salary_in_usd
-      return acc
-    }, {})
-  ).map((item: any) => ({
-    ...item,
-    avgSalary: Math.round(item.totalSalary / item.jobCount),
-  }))
 
   const handleRowClick = async (record: any) => {
     const response = await axios.get(`${URL}/${record.work_year}`)
@@ -157,41 +158,33 @@ const App: React.FC = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={8}>
           <Card loading={isLoading}>
-            {" "}
-            // Added loading prop
             <Space direction="vertical" size="small" style={{ width: "100%" }}>
               <Text type="secondary">Total Jobs</Text>
               <Title level={3}>
                 <TeamOutlined style={{ marginRight: "8px" }} />
-                {isLoading ? "..." : totalJobs.toLocaleString()} // Show loading
-                text
+                {isLoading ? "..." : totalJobs.toLocaleString()}
               </Title>
             </Space>
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card loading={isLoading}>
-            {" "}
-            // Added loading prop
             <Space direction="vertical" size="small" style={{ width: "100%" }}>
               <Text type="secondary">Average Salary</Text>
               <Title level={3}>
                 <DollarOutlined style={{ marginRight: "8px" }} />$
-                {isLoading ? "..." : averageSalary.toLocaleString()} // Show
-                loading text
+                {isLoading ? "..." : averageSalary.toLocaleString()}
               </Title>
             </Space>
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card loading={isLoading}>
-            {" "}
-            // Added loading prop
             <Space direction="vertical" size="small" style={{ width: "100%" }}>
               <Text type="secondary">Years of Data</Text>
               <Title level={3}>
                 <BarChartOutlined style={{ marginRight: "8px" }} />
-                {isLoading ? "..." : processedData.length} // Show loading text
+                {isLoading ? "..." : processedData.length}
               </Title>
             </Space>
           </Card>
