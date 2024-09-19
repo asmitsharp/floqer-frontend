@@ -41,6 +41,7 @@ const App: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [yearData, setYearData] = useState<SalaryData[]>([])
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   console.log(URL)
 
@@ -49,8 +50,15 @@ const App: React.FC = () => {
   }, [])
 
   const fetchData = async () => {
-    const response = await axios.get(URL)
-    setData(response.data)
+    setIsLoading(true) // Start loading
+    try {
+      const response = await axios.get(URL)
+      setData(response.data)
+    } catch (error) {
+      console.error("Error fetching data:", error)
+    } finally {
+      setIsLoading(false) // Stop loading after fetching data
+    }
   }
 
   const columns = [
@@ -94,9 +102,7 @@ const App: React.FC = () => {
   }))
 
   const handleRowClick = async (record: any) => {
-    const response = await axios.get(
-      `http://localhost:8080/api/salaries/${record.work_year}`
-    )
+    const response = await axios.get(`${URL}/${record.work_year}`)
     setYearData(response.data)
     setSelectedYear(record.work_year)
     setIsModalVisible(true)
@@ -150,34 +156,42 @@ const App: React.FC = () => {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={8}>
-          <Card>
+          <Card loading={isLoading}>
+            {" "}
+            // Added loading prop
             <Space direction="vertical" size="small" style={{ width: "100%" }}>
               <Text type="secondary">Total Jobs</Text>
               <Title level={3}>
                 <TeamOutlined style={{ marginRight: "8px" }} />
-                {totalJobs.toLocaleString()}
+                {isLoading ? "..." : totalJobs.toLocaleString()} // Show loading
+                text
               </Title>
             </Space>
           </Card>
         </Col>
         <Col xs={24} sm={8}>
-          <Card>
+          <Card loading={isLoading}>
+            {" "}
+            // Added loading prop
             <Space direction="vertical" size="small" style={{ width: "100%" }}>
               <Text type="secondary">Average Salary</Text>
               <Title level={3}>
                 <DollarOutlined style={{ marginRight: "8px" }} />$
-                {averageSalary.toLocaleString()}
+                {isLoading ? "..." : averageSalary.toLocaleString()} // Show
+                loading text
               </Title>
             </Space>
           </Card>
         </Col>
         <Col xs={24} sm={8}>
-          <Card>
+          <Card loading={isLoading}>
+            {" "}
+            // Added loading prop
             <Space direction="vertical" size="small" style={{ width: "100%" }}>
               <Text type="secondary">Years of Data</Text>
               <Title level={3}>
                 <BarChartOutlined style={{ marginRight: "8px" }} />
-                {processedData.length}
+                {isLoading ? "..." : processedData.length} // Show loading text
               </Title>
             </Space>
           </Card>
