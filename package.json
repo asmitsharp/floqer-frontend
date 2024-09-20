@@ -46,6 +46,5 @@
   },
   "devDependencies": {
     "@types/papaparse": "^5.3.14"
-  },
-  "proxy": "http://16.171.134.46:8080"
+  }
 }
