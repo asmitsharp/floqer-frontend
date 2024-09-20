@@ -72,7 +72,7 @@ const App: React.FC = () => {
   const fetchData = async () => {
     setIsLoading(true)
     try {
-      const response = await axios.get("/api/salaries")
+      const response = await axios.get("http://16.171.134.46:8080/api/salaries")
       setData(response.data)
     } catch (error) {
       console.error("Error fetching data:", error)
@@ -124,7 +124,9 @@ const App: React.FC = () => {
   ]
 
   const handleRowClick = async (record: any) => {
-    const response = await axios.get(`/api/salaries/${record.work_year}`)
+    const response = await axios.get(
+      `http://16.171.134.46:8080/api/salaries/${record.work_year}`
+    )
     setYearData(response.data)
     setSelectedYear(record.work_year)
     setIsModalVisible(true)
@@ -172,9 +174,12 @@ const App: React.FC = () => {
     setInputMessage("")
 
     try {
-      const response = await axios.post("/api/salaries/chat", {
-        message: inputMessage,
-      })
+      const response = await axios.post(
+        "http://16.171.134.46:8080/api/salaries/chat",
+        {
+          message: inputMessage,
+        }
+      )
       console.log(response)
 
       const newAiMessage = {
