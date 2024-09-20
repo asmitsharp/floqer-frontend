@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react"
-import { Table, Modal, Row, Col, Card, Typography, Space } from "antd"
+import {
+  Table,
+  Modal,
+  Row,
+  Col,
+  Card,
+  Typography,
+  Space,
+  Input,
+  Button,
+  List,
+} from "antd"
 import {
   LineChart,
   Line,
@@ -15,9 +26,12 @@ import {
   DollarOutlined,
   TeamOutlined,
   BarChartOutlined,
+  SendOutlined,
 } from "@ant-design/icons"
+import { Console } from "console"
 
 const { Title, Text } = Typography
+const { TextArea } = Input
 
 interface SalaryData {
   work_year: number
@@ -33,6 +47,11 @@ interface SalaryData {
   company_size: string
 }
 
+interface ChatMessage {
+  text: string
+  sender: "user" | "ai"
+}
+
 const URL = process.env.REACT_APP_URL as string
 
 const App: React.FC = () => {
@@ -41,6 +60,8 @@ const App: React.FC = () => {
   const [yearData, setYearData] = useState<SalaryData[]>([])
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [inputMessage, setInputMessage] = useState("")
 
   console.log(URL)
 
@@ -143,6 +164,36 @@ const App: React.FC = () => {
       processedData.length
   )
 
+  const handleSendMessage = async () => {
+    if (inputMessage.trim() === "") return
+
+    const newUserMessage = { text: inputMessage, sender: "user" as const }
+    setChatMessages([...chatMessages, newUserMessage])
+    setInputMessage("")
+
+    try {
+      const response = await axios.post(`${URL}/chat`, {
+        message: inputMessage,
+      })
+      console.log(response)
+
+      const newAiMessage = {
+        text: response.data.response,
+        sender: "ai" as const,
+      }
+      console.log(newAiMessage)
+
+      setChatMessages((prevMessages) => [...prevMessages, newAiMessage])
+    } catch (error) {
+      console.error("Error:", error)
+      const errorMessage = {
+        text: "Sorry, there was an error processing your request.",
+        sender: "ai" as const,
+      }
+      setChatMessages((prevMessages) => [...prevMessages, errorMessage])
+    }
+  }
+
   return (
     <div
       style={{
@@ -191,26 +242,82 @@ const App: React.FC = () => {
         </Col>
       </Row>
 
-      <Card style={{ marginTop: "24px" }}>
-        <Title level={4}>Average Salary Trend</Title>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={processedData}>
-            <XAxis dataKey="work_year" />
-            <YAxis />
-            <CartesianGrid strokeDasharray="3 3" />
-            <Tooltip
-              formatter={(value) => `$${(value as number).toLocaleString()}`}
+      <Row gutter={[16, 16]} style={{ marginTop: "24px" }}>
+        <Col xs={24} lg={12}>
+          <Card>
+            <Title level={4}>Average Salary Trend</Title>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={processedData}>
+                <XAxis dataKey="work_year" />
+                <YAxis />
+                <CartesianGrid strokeDasharray="3 3" />
+                <Tooltip
+                  formatter={(value) =>
+                    `$${(value as number).toLocaleString()}`
+                  }
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="avgSalary"
+                  stroke="#1890ff"
+                  activeDot={{ r: 8 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card style={{ height: "100%" }}>
+            <Title level={4}>Chat with AI Assistant</Title>
+            <List
+              dataSource={chatMessages}
+              renderItem={(item) => (
+                <List.Item
+                  style={{
+                    justifyContent:
+                      item.sender === "user" ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <Card
+                    style={{
+                      maxWidth: "80%",
+                      backgroundColor:
+                        item.sender === "user" ? "#e6f7ff" : "#f0f0f0",
+                    }}
+                  >
+                    <Text>{item.text}</Text>
+                  </Card>
+                </List.Item>
+              )}
+              style={{
+                height: "250px",
+                overflowY: "auto",
+                marginBottom: "16px",
+              }}
             />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="avgSalary"
-              stroke="#1890ff"
-              activeDot={{ r: 8 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </Card>
+            <Space.Compact style={{ width: "100%" }}>
+              <TextArea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Ask about ML Engineer salaries..."
+                autoSize={{ minRows: 1, maxRows: 3 }}
+                onPressEnter={(e) => {
+                  e.preventDefault()
+                  handleSendMessage()
+                }}
+              />
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={handleSendMessage}
+              >
+                Send
+              </Button>
+            </Space.Compact>
+          </Card>
+        </Col>
+      </Row>
 
       <Card style={{ marginTop: "24px" }}>
         <Title level={4}>Yearly Salary Data</Title>
